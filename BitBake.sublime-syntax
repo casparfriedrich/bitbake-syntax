@@ -1,122 +1,102 @@
 %YAML 1.2
 ---
 
-# See http://www.sublimetext.com/docs/3/syntax.html
+# https://www.sublimetext.com/docs/syntax.html
+# https://www.sublimetext.com/docs/scope_naming.html
 
 name: BitBake
 file_extensions: [bb, bbappend, bbclass, conf, inc]
 scope: source.bitbake
 
 variables:
-  assignment_operators: '(\?\?\=|\?\=|\:\=|\+\=|\=\+|\.\=|\=\.|\=)'
+  adddltsk: '(?:addtask|deltask)'
+  bfrftr: '(?:before|after)'
+  dply: '(?:deploy)'
+  exprt: '(?:export)'
+  fkrt: '(?:fakeroot)'
+  iir: '(?:inherit|include|require)'
+  lname: '(?:[\w\$\{\}\:\-\[\]\/\.]+)'
+  operator: '(?:\?\?\=|\?\=|\:\=|\+\=|\=\+|\.\=|\=\.|\=)'
+  pythn: '(?:python)'
+  sname: '(?:[\w]+)'
 
 contexts:
   main:
-    - include: comments
+    - match: '^#.*$'
+      scope: comment.line
     - include: sharing_functionality
     - include: task_modification
-    - include: function_defnitions
+    - include: function_definitions
     - include: variable_assignments
 
     # Highlight everything uncaptured during development
-    - match: '\S'
+    - match: '.'
       scope: invalid.illegal
 
-# ------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
-  comments:
-    - match: '^\s*#'
-      set:
-      - meta_scope: comment.line.bitbake
-      with_prototype:
-      - match: '$'
-        pop: true
+  function_definitions:
+    - meta_scope: variable.function
 
-  function_defnitions:
-    - match: '^(def)\s+(\S+)\s*\(.*\)\s*:\s*$'
+    - match: '^({{fkrt}} +)?({{pythn}})(?: +({{sname}})(:{{lname}})*)? *\(\) *\{ *$'
       captures:
-        1: storage.type.bitbake
-        2: entity.name.function.bitbake
-      set: Packages/Python/Python.sublime-syntax
-      with_prototype:
-      - match: '^(?=\S+)'
-        pop: true
+        1: keyword.control
+        2: keyword.control
+        3: variable.function
+      embed: Packages/Python/Python.sublime-syntax
+      escape: '^}$'
 
-    - match: '^(python)(\s+(\S+)\s*)?\(\)\s*{'
+    - match: '^({{fkrt}} +)?(?:({{sname}})(:{{lname}})*) *\(\) *\{ *$'
       captures:
-        1: storage.type.bitbake
-        2: entity.name.function.bitbake
-      set: Packages/Python/Python.sublime-syntax
-      with_prototype:
-      - match: '}(?=\s*)$'
-        pop: true
-
-    - match: '^(\S+)\s*\(\)\s*{'
-      captures:
-        1: entity.name.function.bitbake
-      set: Packages/ShellScript/Shell-Unix-Generic.sublime-syntax
-      with_prototype:
-      - match: '}(?=\s*)$'
-        pop: true
-
-  variable_assignments:
-    - match: '^\s*(?:(export)\s+)?(\S+)\s*({{assignment_operators}})'
-      captures:
-        1: storage.modifier.bitbake
-        2: variable.other.bitbake
-        3: keyword.operator.assignment.bitbake
-      push: variable_assignment_scope
+        1: keyword.control
+        2: variable.function
+      embed: Packages/ShellScript/Shell-Unix-Generic.sublime-syntax
+      escape: '^}$'
 
   sharing_functionality:
-    - match: '^\s*\b(inherit|include|require)\b'
-      scope: keyword.control.import.bitbake
-      push: sharing_functionality_scope
+    - match: '^({{iir}})(?: +({{dply}}))?(?: +({{lname}}))+ *$'
+      captures:
+        1: keyword.control
+        2: keyword.control
+
+  variable_assignments:
+    - match: '^({{exprt}})? *({{lname}}) *({{operator}}) *'
+      captures:
+        1: keyword.control
+        2: variable.other
+        3: keyword.operator
+      set:
+        - include: strings
+        - match: '$'
+          pop: true
 
   task_modification:
-    - match: '^\s*\b(addtask|deltask)\b'
-      scope: keyword.control.conditional.bitbake
-      push: task_modification_scope
-
-# ------------------------------------------------------------------------------
-
-  variable_assignment_scope:
-    - include: strings
-    - match: '\n'
-      pop: true
-
-  sharing_functionality_scope:
-    - match: '\n'
-      pop: true
-
-  task_modification_scope:
-    - match: '\b(before|after)\b'
-      scope: keyword.control.conditional.bitbake
-    - match: '\n'
-      pop: true
+    - match: '^({{adddltsk}}) *({{sname}})(?: *({{bfrftr}}) *({{sname}})(?: *({{bfrftr}}) *({{sname}})))?$'
+      captures:
+        1: keyword.control
+        2: variable.function
+        3: keyword.control
+        4: variable.function
+        5: keyword.control
+        6: variable.function
 
   strings:
     - match: "'"
-      scope: punctuation.definition.string.begin.bitbake
-      push: string_single_quoted
+      scope: punctuation.definition.string.begin
+      push:
+      - meta_scope: string.quoted.single
+      - match: '\\[\S\s]'
+        scope: constant.character.escape
+      - match: "'"
+        scope: punctuation.definition.string.end
+        pop: true
 
     - match: '"'
-      scope: punctuation.definition.string.begin.bitbake
-      push: string_double_quoted
-
-  string_single_quoted:
-    - meta_scope: string.quoted.single.bitbake
-    - include: string_escaped_char
-    - match: "'"
-      scope: punctuation.definition.string.end
-      pop: true
-
-  string_double_quoted:
-    - meta_scope: string.quoted.double.bitbake
-    - include: string_escaped_char
-    - match: '"'
-      scope: punctuation.definition.string.end
-      pop: true
-
-  string_escaped_char:
-    - match: '\\(.|\n)'
-      scope: constant.character.escape.bitbake
+      scope: punctuation.definition.string.begin
+      push:
+      - meta_scope: string.quoted.double
+      - match: '\\[\S\s]'
+        scope: constant.character.escape
+      - match: '"'
+        scope: punctuation.definition.string.end
+        pop: true
