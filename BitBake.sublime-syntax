@@ -38,6 +38,13 @@ contexts:
   function_definitions:
     - meta_scope: variable.function
 
+    - match: '^(def) *({{sname}}) *\(.*\) *\: *$'
+      captures:
+        1: keyword.declaration.function.python
+        2: entity.name.function.python
+      embed: Packages/Python/Python.sublime-syntax
+      escape: '^\s$'
+
     - match: '^({{fkrt}} +)?({{pythn}})(?: +({{sname}})(:{{lname}})*)? *\(\) *\{ *$'
       captures:
         1: keyword.control
@@ -71,7 +78,7 @@ contexts:
           pop: true
 
   task_modification:
-    - match: '^({{adddltsk}}) *({{sname}})(?: *({{bfrftr}}) *({{sname}})(?: *({{bfrftr}}) *({{sname}})))?$'
+    - match: '^({{adddltsk}}) *({{sname}})(?: *({{bfrftr}}) *({{sname}})(?: *({{bfrftr}}) *({{sname}}))?)$'
       captures:
         1: keyword.control
         2: variable.function
